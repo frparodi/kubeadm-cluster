@@ -1,0 +1,46 @@
+#################################################################################
+# General
+#################################################################################
+
+.env
+scripts
+.DS_Store
+
+#################################################################################
+# Terraform
+#################################################################################
+
+# Local Terraform directories
+**/.terraform/*
+.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+
+# Exclude CLI configuration files
+.terraformrc
+terraform.rc
+
+# .tfvars files for sensitive data, such as passwords, private keys, and other secrets.
+*.tfvars
+*.tfvars.json
+
+# Ignore override files as they are usually used to override resources locally and should not be shared
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore any plan output files
+*.tfplan
+
+# Ignore tfsec and checkov results
+.tfsec/
+.checkov/
+
+# Ignore tfenv
+.terraform-version
