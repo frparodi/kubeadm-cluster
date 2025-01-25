@@ -39,7 +39,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    "Name"                   = "${var.namespace}-${var.environment}-public-subnet-${count.index}"
+    "Name" = "${var.namespace}-${var.environment}-public-subnet-${count.index}"
   }
 }
 
@@ -103,7 +103,7 @@ resource "aws_subnet" "private" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    "Name"                            = "${var.namespace}-private-subnet-${count.index}"
+    "Name" = "${var.namespace}-private-subnet-${count.index}"
   }
 }
 

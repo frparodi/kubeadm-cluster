@@ -37,5 +37,5 @@ variable "vpc_cidr" {
 variable "az_count" {
   description = "How many availability zones are used"
   type        = number
-  default     = 2 
+  default     = 2
 }
