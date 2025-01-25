@@ -14,7 +14,7 @@ resource "local_sensitive_file" "this" {
 }
 
 # Upload public key to AWS
-resource "aws_key_pair" "bastion_public_key" {
+resource "aws_key_pair" "this" {
   key_name   = var.key_name
   public_key = trimspace(tls_private_key.this.public_key_openssh)
 }
