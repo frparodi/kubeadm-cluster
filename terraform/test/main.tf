@@ -34,10 +34,9 @@ module "cluster_nodes_keys" {
 }
 
 # --------------------------------------------------------------------------------------------------------
-# Control Plane
+# Network Interfaces
 # --------------------------------------------------------------------------------------------------------
 
-# Create network interface for Control Plane node
 resource "aws_network_interface" "control_plane_eni" {
   subnet_id = module.vpc.private_subnets[0]
   security_groups = [
@@ -51,24 +50,29 @@ resource "aws_network_interface" "control_plane_eni" {
   }
 }
 
-resource "aws_instance" "controlplane" {
-  instance_type = "t3.medium"
-  ami           = data.aws_ami.ubuntu.image_id
-  key_name      = module.cluster_nodes_keys.public_key_name
-
-  network_interface {
-    device_index         = 0
-    network_interface_id = aws_network_interface.control_plane_eni.id // Attach network interface to instance
-  }
-
-  user_data = <<-EOT
-              #!/usr/bin/env bash
-              hostnamectl set-hostname controlplane
-              echo "PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')" >> /etc/environment
-              EOT
+resource "aws_network_interface" "node01_eni" {
+  subnet_id = module.vpc.private_subnets[1]
+  security_groups = [
+    aws_security_group.egress_all.id,
+    aws_security_group.worker_node.id,
+    aws_security_group.weave.id
+  ]
 
   tags = {
-    "Name" = "controlplane"
+    Name = "node01-eni"
+  }
+}
+
+resource "aws_network_interface" "node02_eni" {
+  subnet_id = module.vpc.private_subnets[0]
+  security_groups = [
+    aws_security_group.egress_all.id,
+    aws_security_group.worker_node.id,
+    aws_security_group.weave.id
+  ]
+
+  tags = {
+    Name = "node02-eni"
   }
 }
 
@@ -97,10 +101,98 @@ resource "aws_instance" "bastion" {
               echo "PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')" >> /etc/environment
               cat <<EOF >> /etc/hosts
               ${aws_network_interface.control_plane_eni.private_ip} controlplane
+              ${aws_network_interface.node01_eni.private_ip} node01
+              ${aws_network_interface.node02_eni.private_ip} node02
               EOF
               EOT
 
   tags = {
     "Name" = "bastion"
+  }
+}
+
+# --------------------------------------------------------------------------------------------------------
+# Control Plane
+# --------------------------------------------------------------------------------------------------------
+
+resource "aws_instance" "controlplane" {
+  instance_type = "t3.medium"
+  ami           = data.aws_ami.ubuntu.image_id
+  key_name      = module.cluster_nodes_keys.public_key_name
+
+  network_interface {
+    device_index         = 0
+    network_interface_id = aws_network_interface.control_plane_eni.id // Attach network interface to instance
+  }
+
+  user_data = <<-EOT
+              #!/usr/bin/env bash
+              hostnamectl set-hostname controlplane
+              echo "PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')" >> /etc/environment
+              cat <<EOF >> /etc/hosts
+              ${aws_network_interface.control_plane_eni.private_ip} controlplane
+              ${aws_network_interface.node01_eni.private_ip} node01
+              ${aws_network_interface.node02_eni.private_ip} node02
+              EOF
+              EOT
+
+  tags = {
+    "Name" = "controlplane"
+  }
+}
+
+# --------------------------------------------------------------------------------------------------------
+# Worker Node
+# --------------------------------------------------------------------------------------------------------
+
+resource "aws_instance" "node01" {
+  instance_type = "t3.medium"
+  ami           = data.aws_ami.ubuntu.image_id
+  key_name      = module.cluster_nodes_keys.public_key_name
+
+  network_interface {
+    device_index         = 0
+    network_interface_id = aws_network_interface.node01_eni.id // Attach network interface to instance
+  }
+
+  user_data = <<-EOT
+              #!/usr/bin/env bash
+              hostnamectl set-hostname node01
+              echo "PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')" >> /etc/environment
+              cat <<EOF >> /etc/hosts
+              ${aws_network_interface.control_plane_eni.private_ip} controlplane
+              ${aws_network_interface.node01_eni.private_ip} node01
+              ${aws_network_interface.node02_eni.private_ip} node02
+              EOF
+              EOT
+
+  tags = {
+    "Name" = "node01"
+  }
+}
+
+resource "aws_instance" "node02" {
+  instance_type = "t3.medium"
+  ami           = data.aws_ami.ubuntu.image_id
+  key_name      = module.cluster_nodes_keys.public_key_name
+
+  network_interface {
+    device_index         = 0
+    network_interface_id = aws_network_interface.node02_eni.id // Attach network interface to instance
+  }
+
+  user_data = <<-EOT
+              #!/usr/bin/env bash
+              hostnamectl set-hostname node02
+              echo "PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')" >> /etc/environment
+              cat <<EOF >> /etc/hosts
+              ${aws_network_interface.control_plane_eni.private_ip} controlplane
+              ${aws_network_interface.node01_eni.private_ip} node01
+              ${aws_network_interface.node02_eni.private_ip} node02
+              EOF
+              EOT
+
+  tags = {
+    "Name" = "node02"
   }
 }

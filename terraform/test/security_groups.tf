@@ -66,7 +66,7 @@ resource "aws_security_group" "weave" {
     protocol    = "tcp"
     security_groups = [
       aws_security_group.control_plane.id,
-      # aws_security_group.workernode.id
+      aws_security_group.worker_node.id
     ]
   }
 
@@ -77,7 +77,42 @@ resource "aws_security_group" "weave" {
     protocol    = "udp"
     security_groups = [
       aws_security_group.control_plane.id,
-      # aws_security_group.workernode.id
+      aws_security_group.worker_node.id
+    ]
+  }
+}
+
+resource "aws_security_group" "worker_node" {
+  name   = "worker_node"
+  vpc_id = module.vpc.vpc_id
+
+  ingress {
+    description = "Login SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    security_groups = [
+      aws_security_group.bastion_host.id
+    ]
+  }
+
+  ingress {
+    description = "Kubelet API"
+    from_port   = 10250
+    to_port     = 10250
+    protocol    = "tcp"
+    security_groups = [
+      aws_security_group.control_plane.id
+    ]
+  }
+
+  ingress {
+    description = "Node Ports"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = [
+      "0.0.0.0/0"
     ]
   }
 }
