@@ -42,8 +42,10 @@ resource "aws_network_interface" "control_plane_eni" {
   security_groups = [
     aws_security_group.egress_all.id,
     aws_security_group.control_plane.id,
-    aws_security_group.weave.id
+    aws_security_group.calico.id
   ]
+
+  source_dest_check = false
 
   tags = {
     Name = "control-plane-eni"
@@ -55,8 +57,10 @@ resource "aws_network_interface" "node01_eni" {
   security_groups = [
     aws_security_group.egress_all.id,
     aws_security_group.worker_node.id,
-    aws_security_group.weave.id
+    aws_security_group.calico.id
   ]
+
+  source_dest_check = false
 
   tags = {
     Name = "node01-eni"
@@ -68,8 +72,10 @@ resource "aws_network_interface" "node02_eni" {
   security_groups = [
     aws_security_group.egress_all.id,
     aws_security_group.worker_node.id,
-    aws_security_group.weave.id
+    aws_security_group.calico.id
   ]
+
+  source_dest_check = false
 
   tags = {
     Name = "node02-eni"
@@ -133,6 +139,9 @@ resource "aws_instance" "controlplane" {
               ${aws_network_interface.control_plane_eni.private_ip} controlplane
               ${aws_network_interface.node01_eni.private_ip} node01
               ${aws_network_interface.node02_eni.private_ip} node02
+
+              sudo swapoff -a
+              sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
               EOF
               EOT
 
@@ -163,6 +172,9 @@ resource "aws_instance" "node01" {
               ${aws_network_interface.control_plane_eni.private_ip} controlplane
               ${aws_network_interface.node01_eni.private_ip} node01
               ${aws_network_interface.node02_eni.private_ip} node02
+
+              sudo swapoff -a
+              sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
               EOF
               EOT
 
@@ -171,28 +183,31 @@ resource "aws_instance" "node01" {
   }
 }
 
-resource "aws_instance" "node02" {
-  instance_type = "t3.medium"
-  ami           = data.aws_ami.ubuntu.image_id
-  key_name      = module.cluster_nodes_keys.public_key_name
+# resource "aws_instance" "node02" {
+#   instance_type = "t3.medium"
+#   ami           = data.aws_ami.ubuntu.image_id
+#   key_name      = module.cluster_nodes_keys.public_key_name
 
-  network_interface {
-    device_index         = 0
-    network_interface_id = aws_network_interface.node02_eni.id // Attach network interface to instance
-  }
+#   network_interface {
+#     device_index         = 0
+#     network_interface_id = aws_network_interface.node02_eni.id // Attach network interface to instance
+#   }
 
-  user_data = <<-EOT
-              #!/usr/bin/env bash
-              hostnamectl set-hostname node02
-              echo "PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')" >> /etc/environment
-              cat <<EOF >> /etc/hosts
-              ${aws_network_interface.control_plane_eni.private_ip} controlplane
-              ${aws_network_interface.node01_eni.private_ip} node01
-              ${aws_network_interface.node02_eni.private_ip} node02
-              EOF
-              EOT
+#   user_data = <<-EOT
+#               #!/usr/bin/env bash
+#               hostnamectl set-hostname node02
+#               echo "PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')" >> /etc/environment
+#               cat <<EOF >> /etc/hosts
+#               ${aws_network_interface.control_plane_eni.private_ip} controlplane
+#               ${aws_network_interface.node01_eni.private_ip} node01
+#               ${aws_network_interface.node02_eni.private_ip} node02
 
-  tags = {
-    "Name" = "node02"
-  }
-}
+#               sudo swapoff -a
+#               sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+#               EOF
+#               EOT
+
+#   tags = {
+#     "Name" = "node02"
+#   }
+# }
