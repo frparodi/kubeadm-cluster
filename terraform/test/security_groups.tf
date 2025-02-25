@@ -84,21 +84,21 @@ resource "aws_security_group" "calico" {
   name   = "calico-sg"
   vpc_id = module.vpc.vpc_id
 
-  ingress {
-    description = "Allow IP-in-IP for Calico networking"
-    from_port   = -1
-    to_port     = -1
-    protocol    = 4
-    cidr_blocks = [var.vpc_cidr]
-  }
+  # ingress {
+  #   description = "Allow IP-in-IP for Calico networking"
+  #   from_port   = -1
+  #   to_port     = -1
+  #   protocol    = 4
+  #   cidr_blocks = [var.vpc_cidr]
+  # }
 
-  ingress {
-    description = "Calico networking (BGP)"
-    from_port   = 179
-    to_port     = 179
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
+  # ingress {
+  #   description = "Calico networking (BGP)"
+  #   from_port   = 179
+  #   to_port     = 179
+  #   protocol    = "tcp"
+  #   cidr_blocks = [var.vpc_cidr]
+  # }
 
   ingress {
     description = "VXLAN"
